@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm start -- --clear)",
+      "Bash(npx kill-port:*)",
+      "Bash(npm start -- --reset-cache)",
+      "Bash(npm uninstall:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
