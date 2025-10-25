@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage({ navigation }) {
   const [loginType, setLoginType] = useState('patient'); // 'patient' or 'caretaker'
@@ -20,6 +21,8 @@ export default function LoginPage({ navigation }) {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const { signIn, getUserAttribute } = useAuth();
 
   const validateForm = () => {
     const newErrors = {};
@@ -52,43 +55,88 @@ export default function LoginPage({ navigation }) {
       return;
     }
 
+    console.log('=== LOGIN ATTEMPT START ===');
+    console.log('Email:', formData.email);
+    console.log('Login Type:', loginType);
+
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      console.log('Calling signIn...');
+      const result = await signIn(formData.email, formData.password);
+      console.log('SignIn result:', JSON.stringify(result, null, 2));
+
       setIsLoading(false);
+
+      // Get user name from attributes
+      const userName = result.attributes?.name || formData.email.split('@')[0];
+      console.log('User name:', userName);
+
       if (loginType === 'patient') {
         Alert.alert(
-          'Welcome Back! 🎉',
-          'You have successfully logged in to your Remory account.',
+          'Welcome Back!',
+          `You have successfully logged in to your Remory account.`,
           [
             {
               text: 'Go to Dashboard',
               onPress: () => {
-                // In a real app, you would get the patient name from the login response
-                // For now, we'll use a placeholder or get it from stored user data
-                navigation.navigate('PatientDashboard', { 
-                  patientName: 'Kaushal' // This should come from login response
+                navigation.navigate('PatientDashboard', {
+                  patientName: userName,
                 });
-              }
-            }
+              },
+            },
           ]
         );
       } else {
         Alert.alert(
-          'Caretaker Access Granted! 👥',
+          'Caretaker Access Granted!',
           'You have successfully logged in to the caretaker dashboard.',
           [
             {
               text: 'Go to Caretaker Dashboard',
               onPress: () => {
                 navigation.navigate('CaretakerDashboard');
-              }
-            }
+              },
+            },
           ]
         );
       }
-    }, 1500);
+    } catch (error) {
+      setIsLoading(false);
+      console.error('=== LOGIN ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error stack:', error.stack);
+
+      let errorMessage = 'Failed to login. Please try again.';
+
+      if (error.name === 'UserNotConfirmedException' || error.code === 'UserNotConfirmedException') {
+        errorMessage = 'Your email is not verified. Please verify your email first.';
+        Alert.alert('Email Not Verified', errorMessage, [
+          {
+            text: 'Verify Now',
+            onPress: () => {
+              navigation.navigate('EmailVerification', {
+                email: formData.email,
+                password: formData.password,
+              });
+            },
+          },
+          { text: 'Cancel', style: 'cancel' },
+        ]);
+        return;
+      } else if (error.name === 'NotAuthorizedException' || error.code === 'NotAuthorizedException') {
+        errorMessage = 'Incorrect email or password. Please try again.';
+      } else if (error.name === 'UserNotFoundException' || error.code === 'UserNotFoundException') {
+        errorMessage = 'No account found with this email. Please sign up first.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Login Failed', `${errorMessage}\n\nError: ${error.name || error.code}`);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -223,12 +271,28 @@ export default function LoginPage({ navigation }) {
           {/* Help Section */}
           <View style={styles.helpSection}>
             <Text style={styles.helpText}>
-              💡 {loginType === 'patient' 
+              💡 {loginType === 'patient'
                 ? 'Having trouble remembering your password? Ask your caretaker for help.'
                 : 'Need help accessing your caretaker account? Contact support for assistance.'
               }
             </Text>
           </View>
+
+          {/* DEV ONLY: Bypass Login Button */}
+          <TouchableOpacity
+            style={styles.bypassButton}
+            onPress={() => {
+              if (loginType === 'patient') {
+                navigation.navigate('PatientDashboard', {
+                  patientName: 'Test User'
+                });
+              } else {
+                navigation.navigate('CaretakerDashboard');
+              }
+            }}
+          >
+            <Text style={styles.bypassButtonText}>🚀 BYPASS LOGIN (DEV MODE)</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -398,5 +462,26 @@ const styles = StyleSheet.create({
     color: '#2C3E50',
     lineHeight: 22,
     textAlign: 'center',
+  },
+  bypassButton: {
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 24,
+    borderWidth: 3,
+    borderColor: '#FF4757',
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  bypassButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });

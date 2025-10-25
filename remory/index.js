@@ -1,3 +1,6 @@
+// IMPORTANT: This must be the VERY FIRST import to provide crypto support for AWS Cognito
+import './shim';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';

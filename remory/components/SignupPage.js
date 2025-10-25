@@ -11,11 +11,11 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SignupPage({ navigation }) {
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -23,17 +23,13 @@ export default function SignupPage({ navigation }) {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const { signUp } = useAuth();
+
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
-      newErrors.phone = 'Please enter a valid phone number';
     }
 
     if (!formData.email.trim()) {
@@ -44,8 +40,16 @@ export default function SignupPage({ navigation }) {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter';
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number';
+    } else if (!/(?=.*[@$!%*?&])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one special character (@$!%*?&)';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -70,13 +74,63 @@ export default function SignupPage({ navigation }) {
       return;
     }
 
+    console.log('=== SIGNUP ATTEMPT START ===');
+    console.log('Email:', formData.email);
+    console.log('Name:', formData.name);
+
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      console.log('Calling signUp...');
+      const result = await signUp(
+        formData.email,
+        formData.password,
+        {
+          name: formData.name,
+        }
+      );
+
+      console.log('SignUp result:', JSON.stringify(result, null, 2));
       setIsLoading(false);
-      navigation.navigate('CaretakerInfo', { patientData: formData });
-    }, 1000);
+
+      Alert.alert(
+        'Account Created Successfully!',
+        'A verification code has been sent to your email address. Please verify your email to continue.',
+        [
+          {
+            text: 'Verify Now',
+            onPress: () => {
+              navigation.navigate('EmailVerification', {
+                email: formData.email,
+                password: formData.password,
+              });
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      setIsLoading(false);
+      console.error('=== SIGNUP ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error stack:', error.stack);
+
+      let errorMessage = 'Failed to create account. Please try again.';
+
+      if (error.name === 'UsernameExistsException' || error.code === 'UsernameExistsException') {
+        errorMessage = 'An account with this email already exists. Please login instead.';
+      } else if (error.name === 'InvalidPasswordException' || error.code === 'InvalidPasswordException') {
+        errorMessage = 'Password does not meet requirements. Please ensure it has at least 8 characters, including uppercase, lowercase, number, and special character.';
+      } else if (error.name === 'InvalidParameterException' || error.code === 'InvalidParameterException') {
+        errorMessage = 'Invalid input. Please check your information.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Signup Failed', `${errorMessage}\n\nError: ${error.name || error.code}`);
+    }
   };
 
   return (
@@ -109,20 +163,6 @@ export default function SignupPage({ navigation }) {
                 placeholderTextColor="#A0A0A0"
               />
               {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-            </View>
-
-            {/* Phone Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Phone Number *</Text>
-              <TextInput
-                style={[styles.textInput, errors.phone && styles.inputError]}
-                placeholder="Enter your phone number"
-                value={formData.phone}
-                onChangeText={(value) => handleInputChange('phone', value)}
-                keyboardType="phone-pad"
-                placeholderTextColor="#A0A0A0"
-              />
-              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
             </View>
 
             {/* Email Field */}
@@ -177,15 +217,14 @@ export default function SignupPage({ navigation }) {
             disabled={isLoading}
           >
             <Text style={styles.submitButtonText}>
-              {isLoading ? 'Creating Account...' : 'Continue to Caretaker Setup'}
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
 
           {/* Help Text */}
           <View style={styles.helpSection}>
             <Text style={styles.helpText}>
-              💡 Tip: Make sure to use a password you can remember easily. 
-              Your caretaker will also have access to help you if needed.
+              💡 Password Requirements: At least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&).
             </Text>
           </View>
 
