@@ -1,21 +1,28 @@
+import logging
 import os
-import asyncio
-from dotenv import load_dotenv
-import jwt
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-from livekit.rtc import Room
-from livekit.agents import Agent
-from livekit.plugins import silero
+from dotenv import load_dotenv
+from livekit.agents import (
+    Agent,
+    AgentSession,
+    JobContext,
+    JobProcess,
+    MetricsCollectedEvent,
+    RoomInputOptions,
+    WorkerOptions,
+    cli,
+    metrics,
+)
+from livekit.plugins import silero, noise_cancellation
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from anthropic import Anthropic
 
-# ---- Load .env from project root ----
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+logger = logging.getLogger("agent")
+load_dotenv(".env")
 
-# ---- LLM (Claude) ----
-anthropic = Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+# ---- Claude setup ----
+CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
+anthropic_client = Anthropic(api_key=CLAUDE_API_KEY)
 
 SYSTEM_PROMPT = """
 You are a calm, supportive memory companion for individuals experiencing early-stage memory loss.
@@ -23,56 +30,70 @@ Speak slowly, warmly, and reassuringly.
 Encourage recall gently and never mention "forgetting" or memory failure.
 """
 
-# ---- LiveKit token ----
-def make_livekit_token():
-    exp_time = int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
-    payload = {
-        "iss": os.getenv("LIVEKIT_API_KEY"),
-        "sub": "memory-companion",
-        "room": "memory-care-room",
-        "exp": exp_time,
-        "video": {
-            "room": "memory-care-room",
-            "roomJoin": True,
-            "roomCreate": True,
-            "canPublish": True,
-            "canSubscribe": True
-        }
-    }
-    return jwt.encode(payload, os.getenv("LIVEKIT_API_SECRET"), algorithm="HS256")
+# ---- Assistant ----
+class Assistant(Agent):
+    def __init__(self):
+        super().__init__(instructions=SYSTEM_PROMPT)
 
-# ---- MemoryCareAgent ----
-class MemoryCareAgent(Agent):
     async def on_text(self, participant, message):
         user_input = message.text
-        print(f"[User] {user_input}")
+        logger.info(f"[User] {user_input}")
 
-        response = anthropic.completions.create(
+        # Claude completion
+        response = anthropic_client.completions.create(
             model="claude-3-5-sonnet-20240620",
             max_tokens_to_sample=200,
             prompt=SYSTEM_PROMPT + "\n\nHuman: " + user_input + "\n\nAssistant:"
         )
 
         reply = response.completion
-        print(f"[Agent] {reply}")
+        logger.info(f"[Agent] {reply}")
         await self.say(reply)
 
-# ---- Main ----
-async def main():
-    token = make_livekit_token()
-    room = Room()
-    await room.connect(os.getenv("LIVEKIT_URL"), token)
 
-    # Load Silero VAD
-    audio_vad = silero.VAD.load()
+# ---- Prewarm VAD ----
+def prewarm(proc: JobProcess):
+    proc.userdata["vad"] = silero.VAD.load()
 
-    # Initialize agent with instructions only
-    agent = MemoryCareAgent(instructions=SYSTEM_PROMPT)
 
-    print("✅ Agent running. Speak when ready…")
+# ---- Entry point ----
+async def entrypoint(ctx: JobContext):
+    ctx.log_context_fields = {"room": ctx.room.name}
 
-    # Run the agent with VAD (no STT needed for basic audio)
-    await agent.run(room=room, vad=audio_vad)
+    # Create agent session
+    session = AgentSession(
+        stt="assemblyai/universal-streaming:en",  # keep AssemblyAI STT
+        llm=None,  # LLM is handled in Assistant via Claude
+        tts="cartesia/sonic-2:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",  # keep TTS
+        turn_detection=MultilingualModel(),
+        vad=ctx.proc.userdata["vad"],
+        preemptive_generation=True,
+    )
+
+    # Metrics collection
+    usage_collector = metrics.UsageCollector()
+
+    @session.on("metrics_collected")
+    def _on_metrics_collected(ev: MetricsCollectedEvent):
+        metrics.log_metrics(ev.metrics)
+        usage_collector.collect(ev.metrics)
+
+    async def log_usage():
+        summary = usage_collector.get_summary()
+        logger.info(f"Usage: {summary}")
+
+    ctx.add_shutdown_callback(log_usage)
+
+    # Start session with our Assistant
+    await session.start(
+        agent=Assistant(),
+        room=ctx.room,
+        room_input_options=RoomInputOptions(
+            noise_cancellation=noise_cancellation.BVC()
+        ),
+    )
+
+    await ctx.connect()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, prewarm_fnc=prewarm))
