@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,188 +9,227 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+const { width, height } = Dimensions.get('window');
+
 export default function LoginPage({ navigation }) {
-  const [loginType, setLoginType] = useState('patient'); // 'patient' or 'caretaker'
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [loginType, setLoginType] = useState('patient');
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Background floating shadow
+  const circleX = useRef(new Animated.Value(0)).current;
+  const circleY = useRef(new Animated.Value(0)).current;
+  const circleScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Initial entrance and animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }),
+    ]).start();
+
+    // Logo slow rotation (native driver)
+    Animated.loop(
+      Animated.timing(logoRotate, { toValue: 1, duration: 20000, useNativeDriver: true })
+    ).start();
+
+    // Pulse animation (consistent native driver)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  useEffect(() => {
+    // Floating background motion (native driver for transforms)
+    const circleAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(circleX, { toValue: 30, duration: 6000, useNativeDriver: true }),
+          Animated.timing(circleY, { toValue: 20, duration: 6000, useNativeDriver: true }),
+          Animated.timing(circleScale, { toValue: 1.1, duration: 6000, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(circleX, { toValue: -20, duration: 6000, useNativeDriver: true }),
+          Animated.timing(circleY, { toValue: -15, duration: 6000, useNativeDriver: true }),
+          Animated.timing(circleScale, { toValue: 1, duration: 6000, useNativeDriver: true }),
+        ]),
+      ])
+    );
+    circleAnimation.start();
+    return () => circleAnimation.stop();
+  }, []);
+
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    }
-
+    if (!formData.password) newErrors.password = 'Password is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!validateForm()) {
       Alert.alert('Please fix the errors', 'Please check all fields and try again.');
       return;
     }
-
     setIsLoading(true);
-    
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
       if (loginType === 'patient') {
-        Alert.alert(
-          'Welcome Back! 🎉',
-          'You have successfully logged in to your Alzyra account.',
-          [
-            {
-              text: 'Go to Dashboard',
-              onPress: () => {
-                // In a real app, you would get the patient name from the login response
-                // For now, we'll use a placeholder or get it from stored user data
-                navigation.navigate('PatientDashboard', { 
-                  patientName: 'Kaushal' // This should come from login response
-                });
-              }
-            }
-          ]
-        );
+        navigation.navigate('PatientDashboard', { patientName: 'Kaushal' });
       } else {
-        Alert.alert(
-          'Caretaker Access Granted! 👥',
-          'You have successfully logged in to the caretaker dashboard.',
-          [
-            {
-              text: 'Go to Caretaker Dashboard',
-              onPress: () => {
-                navigation.navigate('CaretakerDashboard');
-              }
-            }
-          ]
-        );
+        navigation.navigate('CaretakerDashboard');
       }
     }, 1500);
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password?',
-      `We'll send password reset instructions to your email address.`,
-      [
-        { text: 'Send Reset Email', onPress: () => console.log('Password reset requested') },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  };
-
-  const toggleLoginType = () => {
-    setLoginType(loginType === 'patient' ? 'caretaker' : 'patient');
-    setFormData({ email: '', password: '' });
-    setErrors({});
+    Alert.alert('Forgot Password?', 'We’ll send password reset instructions to your email.', [
+      { text: 'Send Reset Email' },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Header Section */}
-          <View style={styles.headerSection}>
-            <Text style={styles.welcomeText}>Welcome Back to Alzyra</Text>
-            <Text style={styles.subtitleText}>
-              Sign in to continue your memory journey
-            </Text>
-          </View>
+
+          {/* Moving Background Glow */}
+          <Animated.View
+            style={[
+              styles.backgroundCircle,
+              {
+                transform: [
+                  { translateX: circleX },
+                  { translateY: circleY },
+                  { scale: circleScale },
+                ],
+              },
+            ]}
+          />
+          {/* Secondary Glow for Depth */}
+          <Animated.View
+            style={[
+              styles.backgroundCircle,
+              {
+                backgroundColor: 'rgba(90,125,154,0.08)',
+                top: -60,
+                right: -50,
+                width: 280,
+                height: 280,
+                borderRadius: 140,
+                transform: [
+                  { translateX: Animated.multiply(circleX, -0.7) },
+                  { translateY: Animated.multiply(circleY, -0.7) },
+                  { scale: Animated.add(circleScale, 0.1) },
+                ],
+              },
+            ]}
+          />
+
+          {/* Header */}
+          <Animated.View
+            style={[
+              styles.headerSection,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.logoContainer,
+                { transform: [{ scale: logoScale }, { scale: pulseAnim }] },
+              ]}
+            >
+              <Image
+                source={require('../assets/Alzyra_Logo.webp')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </Animated.View>
+              <Text style={styles.welcomeText}>Welcome to Alzyra</Text>
+          </Animated.View>
 
           {/* Login Type Toggle */}
           <View style={styles.toggleSection}>
-            <Text style={styles.toggleLabel}>I am logging in as:</Text>
             <View style={styles.toggleContainer}>
               <TouchableOpacity
-                style={[
-                  styles.toggleButton,
-                  loginType === 'patient' && styles.toggleButtonActive
-                ]}
+                style={[styles.toggleButton, loginType === 'patient' && styles.toggleButtonActive]}
                 onPress={() => setLoginType('patient')}
               >
-                <Text style={[
-                  styles.toggleButtonText,
-                  loginType === 'patient' && styles.toggleButtonTextActive
-                ]}>
+                <Text
+                  style={[styles.toggleButtonText, loginType === 'patient' && styles.toggleButtonTextActive]}
+                >
                   👤 Patient
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.toggleButton,
-                  loginType === 'caretaker' && styles.toggleButtonActive
-                ]}
+                style={[styles.toggleButton, loginType === 'caretaker' && styles.toggleButtonActive]}
                 onPress={() => setLoginType('caretaker')}
               >
-                <Text style={[
-                  styles.toggleButtonText,
-                  loginType === 'caretaker' && styles.toggleButtonTextActive
-                ]}>
+                <Text
+                  style={[styles.toggleButtonText, loginType === 'caretaker' && styles.toggleButtonTextActive]}
+                >
                   👥 Caretaker
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Form Section */}
+          {/* Login Form */}
           <View style={styles.formSection}>
-            {/* Email Field */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email Address *</Text>
               <TextInput
                 style={[styles.textInput, errors.email && styles.inputError]}
                 placeholder="Enter your email address"
                 value={formData.email}
-                onChangeText={(value) => handleInputChange('email', value)}
+                onChangeText={v => handleInputChange('email', v)}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
                 placeholderTextColor="#A0A0A0"
               />
               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
-            {/* Password Field */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password *</Text>
               <TextInput
                 style={[styles.textInput, errors.password && styles.inputError]}
                 placeholder="Enter your password"
                 value={formData.password}
-                onChangeText={(value) => handleInputChange('password', value)}
+                onChangeText={v => handleInputChange('password', v)}
                 secureTextEntry
                 placeholderTextColor="#A0A0A0"
               />
               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
-            {/* Forgot Password Link */}
             <TouchableOpacity
               style={styles.forgotPasswordContainer}
               onPress={handleForgotPassword}
@@ -206,7 +245,9 @@ export default function LoginPage({ navigation }) {
             disabled={isLoading}
           >
             <Text style={styles.loginButtonText}>
-              {isLoading ? 'Signing In...' : `Sign In as ${loginType === 'patient' ? 'Patient' : 'Caretaker'}`}
+              {isLoading
+                ? 'Signing In...'
+                : `Sign In as ${loginType === 'patient' ? 'Patient' : 'Caretaker'}`}
             </Text>
           </TouchableOpacity>
 
@@ -214,19 +255,19 @@ export default function LoginPage({ navigation }) {
           <View style={styles.signupSection}>
             <Text style={styles.signupText}>
               Don't have an account?{' '}
-              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                <Text style={styles.signupLink}>Create one here</Text>
-              </TouchableOpacity>
+              <Text style={styles.signupLink} onPress={() => navigation.navigate('Signup')}>
+                Sign up
+              </Text>
             </Text>
           </View>
 
           {/* Help Section */}
           <View style={styles.helpSection}>
             <Text style={styles.helpText}>
-              💡 {loginType === 'patient' 
+              💡{' '}
+              {loginType === 'patient'
                 ? 'Having trouble remembering your password? Ask your caretaker for help.'
-                : 'Need help accessing your caretaker account? Contact support for assistance.'
-              }
+                : 'Need help accessing your caretaker account? Contact support for assistance.'}
             </Text>
           </View>
         </ScrollView>
@@ -236,45 +277,38 @@ export default function LoginPage({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F0F8FF', // Soft blue background
+  container: { flex: 1, backgroundColor: '#F0F8FF' },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 24 },
+
+  backgroundCircle: {
+    position: 'absolute',
+    top: -100,
+    right: -80,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(90,125,154,0.12)',
+    shadowColor: '#5A7D9A',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 3,
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-  },
-  headerSection: {
-    marginBottom: 32,
-    alignItems: 'center',
-  },
+
+  headerSection: { alignItems: 'center', marginBottom: 10 },
+  logoContainer: { marginBottom: 10, shadowColor: '#5A7D9A', shadowOpacity: 0.3 },
+  logo: { width: 120, height: 120 },
   welcomeText: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
-    color: '#2C3E50', // Dark blue-grey
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  subtitleText: {
-    fontSize: 18,
-    color: '#5A7D9A', // Medium blue-grey
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 16,
-  },
-  toggleSection: {
-    marginBottom: 32,
-    alignItems: 'center',
-  },
-  toggleLabel: {
-    fontSize: 18,
-    fontWeight: '600',
     color: '#2C3E50',
-    marginBottom: 16,
+    textAlign: 'center',
+    textShadowColor: 'rgba(90,125,154,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
+
+  toggleSection: { marginBottom: 30, alignItems: 'center' },
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: '#E8F4FD',
@@ -289,41 +323,24 @@ const styles = StyleSheet.create({
   toggleButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
   },
-  toggleButtonActive: {
-    backgroundColor: '#5A7D9A',
-  },
-  toggleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#5A7D9A',
-  },
-  toggleButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  formSection: {
-    marginBottom: 24,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
+  toggleButtonActive: { backgroundColor: '#5A7D9A' },
+  toggleButtonText: { fontSize: 16, fontWeight: '600', color: '#5A7D9A' },
+  toggleButtonTextActive: { color: '#FFFFFF' },
+
+  formSection: { marginBottom: 24 },
+  inputContainer: { marginBottom: 18 },
+  label: { fontSize: 16, fontWeight: '600', color: '#2C3E50', marginBottom: 6 },
   textInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
     borderWidth: 2,
-    borderColor: '#E8F4FD', // Light blue border
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 18,
+    borderColor: '#E8F4FD',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
     color: '#2C3E50',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -331,72 +348,37 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  inputError: {
-    borderColor: '#E74C3C', // Red border for errors
-    backgroundColor: '#FDF2F2',
-  },
-  errorText: {
-    color: '#E74C3C',
-    fontSize: 16,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginTop: 8,
-  },
-  forgotPasswordText: {
-    fontSize: 16,
-    color: '#5A7D9A',
-    textDecorationLine: 'underline',
-  },
+  inputError: { borderColor: '#E74C3C', backgroundColor: '#FDF2F2' },
+  errorText: { color: '#E74C3C', fontSize: 14, marginTop: 4 },
+
+  forgotPasswordContainer: { alignItems: 'flex-end', marginTop: 8 },
+  forgotPasswordText: { fontSize: 15, color: '#5A7D9A', textDecorationLine: 'underline' },
+
   loginButton: {
-    backgroundColor: '#5A7D9A', // Calming blue
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    backgroundColor: '#5A7D9A',
+    paddingVertical: 16,
+    borderRadius: 10,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  loginButtonDisabled: {
-    backgroundColor: '#BDC3C7',
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  signupSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  signupText: {
-    fontSize: 16,
-    color: '#2C3E50',
-    textAlign: 'center',
-  },
-  signupLink: {
-    fontSize: 16,
-    color: '#5A7D9A',
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+  loginButtonDisabled: { backgroundColor: '#BDC3C7' },
+  loginButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+
+  signupSection: { alignItems: 'center', marginBottom: 16 },
+  signupText: { fontSize: 16, color: '#2C3E50', textAlign: 'center' },
+  signupLink: { fontSize: 16, color: '#5A7D9A', fontWeight: '600', textDecorationLine: 'underline' },
+
   helpSection: {
     backgroundColor: '#E8F4FD',
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderLeftWidth: 4,
     borderLeftColor: '#5A7D9A',
   },
-  helpText: {
-    fontSize: 16,
-    color: '#2C3E50',
-    lineHeight: 22,
-    textAlign: 'center',
-  },
+  helpText: { fontSize: 14, color: '#2C3E50', lineHeight: 20, textAlign: 'center' },
 });

@@ -34,12 +34,12 @@ export default function App() {
           <Stack.Screen 
             name="Login" 
             component={LoginPage}
-            options={{ title: 'Welcome Back' }}
+            options={{ title: '' }}
           />
           <Stack.Screen 
             name="Signup" 
             component={SignupPage}
-            options={{ title: 'Create Your Account' }}
+            options={{ title: '' }}
           />
           <Stack.Screen 
             name="CaretakerInfo" 

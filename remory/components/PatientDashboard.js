@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +22,17 @@ export default function PatientDashboard({ navigation, route }) {
   const [userName] = useState(route?.params?.patientName || 'Patient');
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
+  
+  // Header animations
+  const logoScale = useRef(new Animated.Value(0)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  const logoutPulse = useRef(new Animated.Value(1)).current;
+  
+  // Background animations
+  const backgroundCircle1 = useRef(new Animated.Value(0)).current;
+  const backgroundCircle2 = useRef(new Animated.Value(0)).current;
+  const backgroundCircle3 = useRef(new Animated.Value(0)).current;
+  const floatingElements = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -40,7 +53,83 @@ export default function PatientDashboard({ navigation, route }) {
       }),
     ]).start();
 
-    return () => clearInterval(timer);
+    // Header animations
+    Animated.spring(logoScale, {
+      toValue: 1,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+
+    // Continuous logo rotation
+    const rotateAnimation = Animated.loop(
+      Animated.timing(logoRotate, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    );
+    rotateAnimation.start();
+
+    // Continuous logout pulse
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoutPulse, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoutPulse, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+
+    // Background animations
+    Animated.parallel([
+      Animated.timing(backgroundCircle1, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backgroundCircle2, {
+        toValue: 1,
+        duration: 2500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backgroundCircle3, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Floating elements animation
+    const floatingAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingElements, {
+          toValue: 1,
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingElements, {
+          toValue: 0,
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    floatingAnimation.start();
+
+    return () => {
+      clearInterval(timer);
+      rotateAnimation.stop();
+      pulseAnimation.stop();
+      floatingAnimation.stop();
+    };
   }, []);
 
   const formatGreeting = () => {
@@ -69,7 +158,7 @@ export default function PatientDashboard({ navigation, route }) {
     },
     {
       id: 2,
-      title: 'Call with Nitant',
+      title: 'Call with Nathan',
       time: 'Today, 9:00 AM',
       strength: 92,
       type: 'communication',
@@ -191,14 +280,176 @@ export default function PatientDashboard({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Header with Menu and Logout */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity style={styles.headerButton} onPress={handleMenu}>
-          <Text style={styles.headerButtonText}>☰</Text>
+      {/* Header */}
+      <Animated.View 
+        style={[
+          styles.header,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
+        <View style={styles.centerSection}>
+          <Animated.View
+            style={[
+              styles.headerLogoContainer,
+              {
+                transform: [
+                  { scale: logoScale },
+                  { rotate: logoRotate.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg']
+                  })}
+                ]
+              }
+            ]}
+          >
+            <Image 
+              source={require('../assets/Alzyra_Logo.webp')} 
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+          </Animated.View>
+          <Text style={styles.appName}>ALZYRA</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Animated.View
+            style={{
+              transform: [{ scale: logoutPulse }]
+            }}
+          >
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </Animated.View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerButton} onPress={handleLogout}>
-          <Text style={styles.headerButtonText}>🚪</Text>
-        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Background Elements */}
+      <View style={styles.backgroundContainer}>
+        {/* Floating Circles */}
+        <Animated.View 
+          style={[
+            styles.backgroundCircle1,
+            {
+              opacity: backgroundCircle1,
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -20]
+                  })
+                },
+                { 
+                  scale: backgroundCircle1.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1]
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        <Animated.View 
+          style={[
+            styles.backgroundCircle2,
+            {
+              opacity: backgroundCircle2,
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 15]
+                  })
+                },
+                { 
+                  scale: backgroundCircle2.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.6, 1]
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        <Animated.View 
+          style={[
+            styles.backgroundCircle3,
+            {
+              opacity: backgroundCircle3,
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -10]
+                  })
+                },
+                { 
+                  scale: backgroundCircle3.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.7, 1]
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        
+        {/* Floating Elements */}
+        <Animated.View 
+          style={[
+            styles.floatingElement1,
+            {
+              opacity: floatingElements.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.3, 0.6, 0.3]
+              }),
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -30]
+                  })
+                },
+                { 
+                  rotate: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg']
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        <Animated.View 
+          style={[
+            styles.floatingElement2,
+            {
+              opacity: floatingElements.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.2, 0.5, 0.2]
+              }),
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 25]
+                  })
+                },
+                { 
+                  rotate: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '-180deg']
+                  })
+                }
+              ]
+            }
+          ]}
+        />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -246,17 +497,17 @@ export default function PatientDashboard({ navigation, route }) {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.familiarFacesScroll}>
             <View style={styles.familiarFaceCard}>
-              <Text style={styles.faceEmoji}>👦</Text>
-              <Text style={styles.faceName}>Akshin</Text>
+              <Image source={require('../assets/Nathan.png')} style={styles.familiarFaceImage} />
+              <Text style={styles.faceName}>Nathan</Text>
               <Text style={styles.faceRelationship}>Grandson</Text>
             </View>
             <View style={styles.familiarFaceCard}>
-              <Text style={styles.faceEmoji}>👩</Text>
+              <Image source={require('../assets/Sarah.png')} style={styles.familiarFaceImage} />
               <Text style={styles.faceName}>Sarah</Text>
               <Text style={styles.faceRelationship}>Friend</Text>
             </View>
             <View style={styles.familiarFaceCard}>
-              <Text style={styles.faceEmoji}>👨‍⚕️</Text>
+              <Image source={require('../assets/DrMartinez.png')} style={styles.familiarFaceImage} />
               <Text style={styles.faceName}>Dr. Martinez</Text>
               <Text style={styles.faceRelationship}>Doctor</Text>
             </View>
@@ -324,7 +575,12 @@ export default function PatientDashboard({ navigation, route }) {
             style={styles.reconstructButton}
             onPress={handleReconstructMemory}
           >
-            <Text style={styles.reconstructButtonText}>Reconstruct a Memory</Text>
+            <Image 
+              source={require('../assets/mic.png')} 
+              style={styles.micIcon}
+              onError={(error) => console.log('Mic image error:', error)}
+              onLoad={() => console.log('Mic image loaded successfully')}
+            />
           </TouchableOpacity>
           <Text style={styles.reconstructPrompt}>
             Would you like me to help you remember what you did yesterday afternoon?
@@ -343,12 +599,12 @@ export default function PatientDashboard({ navigation, route }) {
         >
           <View style={styles.emergencyContactCard}>
             <Text style={styles.emergencyContactTitle}>Emergency Contact</Text>
-            <Text style={styles.emergencyContactName}>Nitant</Text>
+            <Text style={styles.emergencyContactName}>Sarah</Text>
             <Text style={styles.emergencyContactRole}>Primary Caregiver</Text>
             <TouchableOpacity style={styles.callNitantButton} onPress={handleCallCaregiver}>
-              <Text style={styles.callNitantButtonText}>📞 Call Nitant</Text>
+              <Text style={styles.callNitantButtonText}>Call </Text>
             </TouchableOpacity>
-            <Text style={styles.availabilityText}>Available 24/7 for assistance</Text>
+            
           </View>
         </Animated.View>
       </ScrollView>
@@ -361,18 +617,128 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F8FF', // Soft blue background
   },
-  topHeader: {
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+  },
+  backgroundCircle1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(106, 123, 140, 0.08)', // Subtle shadow circle
+    top: '15%',
+    right: '-10%',
+    shadowColor: '#6A7B8C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  backgroundCircle2: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(232, 253, 253, 0.3)', // Light pastel green
+    top: '60%',
+    left: '-5%',
+    shadowColor: '#E8FDFD',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  backgroundCircle3: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(90, 125, 154, 0.1)', // Medium blue
+    top: '35%',
+    left: '70%',
+    shadowColor: '#5A7D9A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  floatingElement1: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(106, 123, 140, 0.15)',
+    top: '25%',
+    left: '20%',
+    shadowColor: '#6A7B8C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  floatingElement2: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(232, 253, 253, 0.4)',
+    top: '70%',
+    right: '25%',
+    shadowColor: '#E8FDFD',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#F0F8FF',
+    backgroundColor: '#6A7B8C',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerButton: {
-    backgroundColor: '#5A7D9A',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  centerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  headerLogoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#5A7D9A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    marginRight: 12,
+  },
+  headerLogo: {
+    width: 40,
+    height: 40,
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -380,11 +746,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  headerButtonText: {
-    fontSize: 18,
+  logoutButtonText: {
+    fontSize: 14,
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   scrollContent: {
     padding: 20,
@@ -485,20 +854,28 @@ const styles = StyleSheet.create({
   },
   reconstructButton: {
     backgroundColor: '#5A7D9A',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 30,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   reconstructButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  micIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
   reconstructPrompt: {
     fontSize: 16,
@@ -538,7 +915,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   familiarFaceCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E8F4FD', //need 
     width: 120,
     padding: 16,
     borderRadius: 12,
@@ -550,9 +927,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  faceEmoji: {
-    fontSize: 48,
+  familiarFaceImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginBottom: 8,
+    backgroundColor: '#F0F0F0',
   },
   faceName: {
     fontSize: 16,
@@ -568,7 +948,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emergencyContactCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F9FA',
     padding: 20,
     borderRadius: 12,
     borderLeftWidth: 4,

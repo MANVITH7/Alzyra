@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,6 +26,54 @@ export default function CaretakerInfoPage({ navigation, route }) {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Background animations
+  const backgroundCircle1 = useRef(new Animated.Value(0)).current;
+  const backgroundCircle2 = useRef(new Animated.Value(0)).current;
+  const backgroundCircle3 = useRef(new Animated.Value(0)).current;
+  const floatingElements = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Background animations
+    Animated.parallel([
+      Animated.timing(backgroundCircle1, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backgroundCircle2, {
+        toValue: 1,
+        duration: 2500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backgroundCircle3, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Floating elements animation
+    const floatingAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingElements, {
+          toValue: 1,
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingElements, {
+          toValue: 0,
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    floatingAnimation.start();
+
+    return () => {
+      floatingAnimation.stop();
+    };
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -112,6 +161,129 @@ export default function CaretakerInfoPage({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Background Elements */}
+      <View style={styles.backgroundContainer}>
+        {/* Floating Circles */}
+        <Animated.View 
+          style={[
+            styles.backgroundCircle1,
+            {
+              opacity: backgroundCircle1,
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -20]
+                  })
+                },
+                { 
+                  scale: backgroundCircle1.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1]
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        <Animated.View 
+          style={[
+            styles.backgroundCircle2,
+            {
+              opacity: backgroundCircle2,
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 15]
+                  })
+                },
+                { 
+                  scale: backgroundCircle2.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.6, 1]
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        <Animated.View 
+          style={[
+            styles.backgroundCircle3,
+            {
+              opacity: backgroundCircle3,
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -10]
+                  })
+                },
+                { 
+                  scale: backgroundCircle3.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.7, 1]
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        
+        {/* Floating Elements */}
+        <Animated.View 
+          style={[
+            styles.floatingElement1,
+            {
+              opacity: floatingElements.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.3, 0.6, 0.3]
+              }),
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -30]
+                  })
+                },
+                { 
+                  rotate: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg']
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+        <Animated.View 
+          style={[
+            styles.floatingElement2,
+            {
+              opacity: floatingElements.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.2, 0.5, 0.2]
+              }),
+              transform: [
+                { 
+                  translateY: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 25]
+                  })
+                },
+                { 
+                  rotate: floatingElements.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '-180deg']
+                  })
+                }
+              ]
+            }
+          ]}
+        />
+      </View>
+
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -257,6 +429,84 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F0F8FF', // Soft blue background
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+  },
+  backgroundCircle1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(106, 123, 140, 0.08)', // Subtle shadow circle
+    top: '15%',
+    right: '-10%',
+    shadowColor: '#6A7B8C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  backgroundCircle2: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(232, 253, 253, 0.3)', // Light pastel green
+    top: '60%',
+    left: '-5%',
+    shadowColor: '#E8FDFD',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  backgroundCircle3: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(90, 125, 154, 0.1)', // Medium blue
+    top: '35%',
+    left: '70%',
+    shadowColor: '#5A7D9A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  floatingElement1: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(106, 123, 140, 0.15)',
+    top: '25%',
+    left: '20%',
+    shadowColor: '#6A7B8C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  floatingElement2: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(232, 253, 253, 0.4)',
+    top: '70%',
+    right: '25%',
+    shadowColor: '#E8FDFD',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 1,
   },
   keyboardView: {
     flex: 1,
