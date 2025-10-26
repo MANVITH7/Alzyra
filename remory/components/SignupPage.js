@@ -88,7 +88,7 @@ export default function SignupPage({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Header Section */}
           <View style={styles.headerSection}>
-            <Text style={styles.welcomeText}>Welcome to Remory</Text>
+            <Text style={styles.welcomeText}>Welcome to Alzyra</Text>
             <Text style={styles.subtitleText}>
               Let's create your account to help you remember the important moments in your life.
             </Text>

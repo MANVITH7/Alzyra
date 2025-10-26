@@ -183,7 +183,7 @@ export default function PatientDashboard({ navigation, route }) {
       [
         { text: 'Settings', onPress: () => console.log('Opening settings') },
         { text: 'Help & Support', onPress: () => console.log('Opening help') },
-        { text: 'About Remory', onPress: () => console.log('Opening about') },
+        { text: 'About Alzyra', onPress: () => console.log('Opening about') },
         { text: 'Cancel', style: 'cancel' }
       ]
     );
@@ -202,20 +202,6 @@ export default function PatientDashboard({ navigation, route }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header Section */}
-        <Animated.View 
-          style={[
-            styles.headerSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
-          <Text style={styles.appTitle}>Remory</Text>
-          <Text style={styles.tagline}>Guiding light through memory loss</Text>
-        </Animated.View>
-
         {/* Greeting Section */}
         <Animated.View 
           style={[
@@ -230,11 +216,51 @@ export default function PatientDashboard({ navigation, route }) {
             {formatGreeting()}, {userName}
           </Text>
           <Text style={styles.dateTime}>
-            {formatDate()} • {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {formatDate()}
           </Text>
-          <Text style={styles.weather}>
-            {weather.temp}°C and {weather.condition} in Phoenix
-          </Text>
+          <View style={styles.memoryReviewBanner}>
+            <Text style={styles.memoryReviewText}>⏰ Time for your afternoon memory review</Text>
+          </View>
+        </Animated.View>
+
+        {/* Familiar Faces Section */}
+        <Animated.View 
+          style={[
+            styles.familiarFacesSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          <View style={styles.familiarFacesHeader}>
+            <Text style={styles.sectionTitle}>Familiar Faces</Text>
+            <View style={styles.carouselButtons}>
+              <TouchableOpacity style={styles.carouselButton}>
+                <Text style={styles.carouselButtonText}>‹</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.carouselButton}>
+                <Text style={styles.carouselButtonText}>›</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.familiarFacesScroll}>
+            <View style={styles.familiarFaceCard}>
+              <Text style={styles.faceEmoji}>👦</Text>
+              <Text style={styles.faceName}>Akshin</Text>
+              <Text style={styles.faceRelationship}>Grandson</Text>
+            </View>
+            <View style={styles.familiarFaceCard}>
+              <Text style={styles.faceEmoji}>👩</Text>
+              <Text style={styles.faceName}>Sarah</Text>
+              <Text style={styles.faceRelationship}>Friend</Text>
+            </View>
+            <View style={styles.familiarFaceCard}>
+              <Text style={styles.faceEmoji}>👨‍⚕️</Text>
+              <Text style={styles.faceName}>Dr. Martinez</Text>
+              <Text style={styles.faceRelationship}>Doctor</Text>
+            </View>
+          </ScrollView>
         </Animated.View>
 
         {/* Memory Threads Section */}
@@ -305,7 +331,7 @@ export default function PatientDashboard({ navigation, route }) {
           </Text>
         </Animated.View>
 
-        {/* Emergency Actions */}
+        {/* Emergency Contact Section */}
         <Animated.View 
           style={[
             styles.emergencySection,
@@ -315,24 +341,14 @@ export default function PatientDashboard({ navigation, route }) {
             }
           ]}
         >
-          <View style={styles.emergencyButtons}>
-            <TouchableOpacity
-              style={styles.emergencyButton}
-              onPress={handleConfusion}
-            >
-              <Text style={styles.emergencyIcon}>❤️</Text>
-              <Text style={styles.emergencyText}>I'm feeling confused</Text>
+          <View style={styles.emergencyContactCard}>
+            <Text style={styles.emergencyContactTitle}>Emergency Contact</Text>
+            <Text style={styles.emergencyContactName}>Nitant</Text>
+            <Text style={styles.emergencyContactRole}>Primary Caregiver</Text>
+            <TouchableOpacity style={styles.callNitantButton} onPress={handleCallCaregiver}>
+              <Text style={styles.callNitantButtonText}>📞 Call Nitant</Text>
             </TouchableOpacity>
-            
-            <View style={styles.emergencyDivider} />
-            
-            <TouchableOpacity
-              style={styles.emergencyButton}
-              onPress={handleCallCaregiver}
-            >
-              <Text style={styles.emergencyIcon}>📞</Text>
-              <Text style={styles.emergencyText}>Call Caregiver</Text>
-            </TouchableOpacity>
+            <Text style={styles.availabilityText}>Available 24/7 for assistance</Text>
           </View>
         </Animated.View>
       </ScrollView>
@@ -373,21 +389,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: 24,
+  memoryReviewBanner: {
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#8B5CF6',
   },
-  appTitle: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#5A7D9A',
+  memoryReviewText: {
+    fontSize: 14,
+    color: '#92400E',
     textAlign: 'center',
-    fontStyle: 'italic',
   },
   greetingSection: {
     backgroundColor: '#E8F4FD',
@@ -494,38 +507,111 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 20,
   },
-  emergencySection: {
-    marginBottom: 20,
+  familiarFacesSection: {
+    marginBottom: 24,
   },
-  emergencyButtons: {
+  familiarFacesHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  carouselButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  carouselButton: {
+    backgroundColor: '#5A7D9A',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  carouselButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  familiarFacesScroll: {
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+  },
+  familiarFaceCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    width: 120,
     padding: 16,
+    borderRadius: 12,
+    marginRight: 12,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  emergencyButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  emergencyIcon: {
-    fontSize: 24,
+  faceEmoji: {
+    fontSize: 48,
     marginBottom: 8,
   },
-  emergencyText: {
-    fontSize: 14,
+  faceName: {
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#2C3E50',
-    fontWeight: '500',
-    textAlign: 'center',
+    marginBottom: 4,
   },
-  emergencyDivider: {
-    width: 1,
-    backgroundColor: '#E8F4FD',
-    marginHorizontal: 16,
+  faceRelationship: {
+    fontSize: 12,
+    color: '#5A7D9A',
+  },
+  emergencySection: {
+    marginBottom: 20,
+  },
+  emergencyContactCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#EF4444',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emergencyContactTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#EF4444',
+    marginBottom: 8,
+  },
+  emergencyContactName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    marginBottom: 4,
+  },
+  emergencyContactRole: {
+    fontSize: 14,
+    color: '#5A7D9A',
+    marginBottom: 16,
+  },
+  callNitantButton: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  callNitantButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  availabilityText: {
+    fontSize: 12,
+    color: '#5A7D9A',
+    textAlign: 'center',
   },
 });

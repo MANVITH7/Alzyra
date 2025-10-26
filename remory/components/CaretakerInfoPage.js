@@ -82,9 +82,9 @@ export default function CaretakerInfoPage({ navigation, route }) {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      Alert.alert(
-        'Account Created Successfully! 🎉',
-        'Your Remory account has been set up. You can now start using the app to help with your memory.',
+        Alert.alert(
+          'Account Created Successfully! 🎉',
+          'Your Alzyra account has been set up. You can now start using the app to help with your memory.',
         [
           {
             text: 'Get Started',

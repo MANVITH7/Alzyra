@@ -60,7 +60,7 @@ export default function LoginPage({ navigation }) {
       if (loginType === 'patient') {
         Alert.alert(
           'Welcome Back! 🎉',
-          'You have successfully logged in to your Remory account.',
+          'You have successfully logged in to your Alzyra account.',
           [
             {
               text: 'Go to Dashboard',
@@ -117,7 +117,7 @@ export default function LoginPage({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Header Section */}
           <View style={styles.headerSection}>
-            <Text style={styles.welcomeText}>Welcome Back to Remory</Text>
+            <Text style={styles.welcomeText}>Welcome Back to Alzyra</Text>
             <Text style={styles.subtitleText}>
               Sign in to continue your memory journey
             </Text>
