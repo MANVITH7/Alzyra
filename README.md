@@ -1,2 +1,1 @@
-🧠 Remory — AI-Powered Context Reconstruction for Memory Loss
-Guiding light through memory loss.
+🧠 Alzyra AI — Guiding light through memory loss.

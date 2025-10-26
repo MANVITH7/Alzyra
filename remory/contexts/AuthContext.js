@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as CognitoService from '../services/cognitoService';
+import * as AuthService from '../services/authService';
 
 const AuthContext = createContext({});
 
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const checkAuthState = async () => {
     try {
       setLoading(true);
-      const currentUser = await CognitoService.getCurrentAuthUser();
+      const currentUser = await AuthService.getCurrentAuthUser();
 
       if (currentUser) {
         setUser(currentUser.user);
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, attributes = {}) => {
     try {
-      const result = await CognitoService.signUp(email, password, attributes);
+      const result = await AuthService.signUp(email, password, attributes);
       return result;
     } catch (error) {
       throw error;
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
 
   const confirmSignUp = async (email, code) => {
     try {
-      const result = await CognitoService.confirmSignUp(email, code);
+      const result = await AuthService.confirmSignUp(email, code);
       return result;
     } catch (error) {
       throw error;
@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const resendConfirmationCode = async (email) => {
     try {
-      const result = await CognitoService.resendConfirmationCode(email);
+      const result = await AuthService.resendConfirmationCode(email);
       return result;
     } catch (error) {
       throw error;
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
-      const result = await CognitoService.signIn(email, password);
+      const result = await AuthService.signIn(email, password);
 
       setUser(result.user);
       setUserAttributes(result.attributes);
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
-      await CognitoService.signOut();
+      await AuthService.signOut();
       setUser(null);
       setUserAttributes(null);
       setTokens(null);
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
 
   const forgotPassword = async (email) => {
     try {
-      const result = await CognitoService.forgotPassword(email);
+      const result = await AuthService.forgotPassword(email);
       return result;
     } catch (error) {
       throw error;
@@ -137,7 +137,7 @@ export const AuthProvider = ({ children }) => {
 
   const confirmPassword = async (email, code, newPassword) => {
     try {
-      const result = await CognitoService.confirmPassword(email, code, newPassword);
+      const result = await AuthService.confirmPassword(email, code, newPassword);
       return result;
     } catch (error) {
       throw error;
@@ -146,7 +146,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (oldPassword, newPassword) => {
     try {
-      const result = await CognitoService.changePassword(oldPassword, newPassword);
+      const result = await AuthService.changePassword(oldPassword, newPassword);
       return result;
     } catch (error) {
       throw error;
@@ -155,7 +155,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserAttributes = async (attributes) => {
     try {
-      const result = await CognitoService.updateUserAttributes(attributes);
+      const result = await AuthService.updateUserAttributes(attributes);
       // Refresh user attributes
       await checkAuthState();
       return result;

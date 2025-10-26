@@ -12,14 +12,16 @@ import PatientDashboard from './components/PatientDashboard.js';
 import CaretakerDashboard from './components/CaretakerDashboard.js';
 import EmailVerificationPage from './components/EmailVerificationPage.js';
 
-// Import AuthProvider
+// Import AuthProvider and LiveKitProvider
 import { AuthProvider } from './contexts/AuthContext.js';
+// import { LiveKitProvider } from './contexts/LiveKitContext.js'; // DISABLED - Only using Vapi
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <AuthProvider>
+      {/* <LiveKitProvider> DISABLED - Only using Vapi */}
       <SafeAreaProvider>
         <NavigationContainer>
           <StatusBar style="auto" />
@@ -69,6 +71,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
+      {/* </LiveKitProvider> DISABLED - Only using Vapi */}
     </AuthProvider>
   );
 }
