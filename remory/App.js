@@ -12,18 +12,20 @@ import PatientDashboard from './components/PatientDashboard.js';
 import CaretakerDashboard from './components/CaretakerDashboard.js';
 import EmailVerificationPage from './components/EmailVerificationPage.js';
 
-// Import AuthProvider
+// Import AuthProvider and LiveKitProvider
 import { AuthProvider } from './contexts/AuthContext.js';
+import { LiveKitProvider } from './contexts/LiveKitContext.js';
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="auto" />
-          <Stack.Navigator
+      <LiveKitProvider>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <Stack.Navigator
             initialRouteName="Login"
             screenOptions={{
               headerStyle: {
@@ -69,6 +71,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
+      </LiveKitProvider>
     </AuthProvider>
   );
 }

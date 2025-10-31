@@ -10,6 +10,10 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// import { useLiveKit } from '../contexts/LiveKitContext'; // DISABLED - Only using Vapi
+// import * as LiveKitService from '../services/livekitService'; // DISABLED - Only using Vapi
+import VoiceAssistantService from '../services/voiceAssistantService';
+import ClaudeConversationModal from './ClaudeConversationModal';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +24,10 @@ export default function PatientDashboard({ navigation, route }) {
   const [userName] = useState(route?.params?.patientName || 'Patient');
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
+
+  // Claude conversation state
+  const [claudeModalVisible, setClaudeModalVisible] = useState(false);
+  const [currentMemoryContext, setCurrentMemoryContext] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -86,21 +94,10 @@ export default function PatientDashboard({ navigation, route }) {
   ];
 
   const handleMemoryRecall = (memory) => {
-    Alert.alert(
-      'Memory Recall',
-      `Let's help you remember: ${memory.title}`,
-      [
-        {
-          text: 'Start AI Reconstruction',
-          onPress: () => {
-            // Navigate to AI reconstruction screen
-            console.log('Starting AI reconstruction for:', memory.title);
-            // In a real app, this would navigate to the AI reconstruction screen
-          }
-        },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    // Open Claude conversation modal for this memory
+    console.log('Starting Claude conversation for:', memory.title);
+    setCurrentMemoryContext(memory);
+    setClaudeModalVisible(true);
   };
 
   const handleReconstructMemory = () => {
@@ -131,12 +128,21 @@ export default function PatientDashboard({ navigation, route }) {
       'It\'s okay to feel confused. Let me help you remember where you are and what you\'re doing.',
       [
         {
-          text: 'Help Me Remember',
-          onPress: () => console.log('Providing comfort and guidance')
+          text: 'Talk to AI Assistant',
+          onPress: () => {
+            console.log('Starting Claude conversation for confusion support');
+            const confusionContext = {
+              title: 'Feeling confused',
+              type: 'emergency',
+              time: new Date().toLocaleString()
+            };
+            setCurrentMemoryContext(confusionContext);
+            setClaudeModalVisible(true);
+          }
         },
         {
           text: 'Call My Caregiver',
-          onPress: () => console.log('Calling caregiver')
+          onPress: () => handleCallCaregiver()
         },
         { text: 'I\'m Okay', style: 'cancel' }
       ]
@@ -336,6 +342,14 @@ export default function PatientDashboard({ navigation, route }) {
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Claude Conversation Modal */}
+      <ClaudeConversationModal
+        visible={claudeModalVisible}
+        onClose={() => setClaudeModalVisible(false)}
+        memoryContext={currentMemoryContext}
+        userName={userName}
+      />
     </SafeAreaView>
   );
 }

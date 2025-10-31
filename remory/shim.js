@@ -1,6 +1,2 @@
-// Polyfills for AWS Amplify in React Native
-import 'react-native-get-random-values';
-import { Buffer } from 'buffer';
-
-// Make Buffer available globally
-global.Buffer = Buffer;
+// Polyfills for React Native
+// This file is intentionally minimal now that AWS dependencies are removed

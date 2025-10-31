@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as CognitoService from '../services/cognitoService';
 
 const AuthContext = createContext({});
 
@@ -14,8 +13,6 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [userAttributes, setUserAttributes] = useState(null);
-  const [tokens, setTokens] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -27,164 +24,123 @@ export const AuthProvider = ({ children }) => {
   const checkAuthState = async () => {
     try {
       setLoading(true);
-      const currentUser = await CognitoService.getCurrentAuthUser();
+      const storedUser = await AsyncStorage.getItem('user');
 
-      if (currentUser) {
-        setUser(currentUser.user);
-        setUserAttributes(currentUser.attributes);
-        setTokens({
-          idToken: currentUser.idToken,
-          accessToken: currentUser.accessToken,
-        });
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
         setIsAuthenticated(true);
-
-        // Store tokens in AsyncStorage for offline access
-        await AsyncStorage.setItem('userTokens', JSON.stringify({
-          idToken: currentUser.idToken,
-          accessToken: currentUser.accessToken,
-        }));
-        await AsyncStorage.setItem('userAttributes', JSON.stringify(currentUser.attributes));
       }
     } catch (error) {
       console.log('No authenticated user found:', error.message);
       setIsAuthenticated(false);
-      // Clear any stored data
-      await AsyncStorage.removeItem('userTokens');
-      await AsyncStorage.removeItem('userAttributes');
     } finally {
       setLoading(false);
     }
   };
 
-  const signUp = async (email, password, attributes = {}) => {
-    try {
-      const result = await CognitoService.signUp(email, password, attributes);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const confirmSignUp = async (email, code) => {
-    try {
-      const result = await CognitoService.confirmSignUp(email, code);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const resendConfirmationCode = async (email) => {
-    try {
-      const result = await CognitoService.resendConfirmationCode(email);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
+  /**
+   * Simple sign in (no actual authentication - demo mode)
+   */
   const signIn = async (email, password) => {
     try {
-      const result = await CognitoService.signIn(email, password);
+      // Simple demo login - just store the email as user
+      const userData = {
+        email: email,
+        name: email.split('@')[0],
+        id: Date.now().toString(),
+      };
 
-      setUser(result.user);
-      setUserAttributes(result.attributes);
-      setTokens({
-        idToken: result.idToken,
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-      });
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
       setIsAuthenticated(true);
 
-      // Store tokens and attributes in AsyncStorage
-      await AsyncStorage.setItem('userTokens', JSON.stringify({
-        idToken: result.idToken,
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-      }));
-      await AsyncStorage.setItem('userAttributes', JSON.stringify(result.attributes));
-
-      return result;
+      return {
+        user: userData,
+        attributes: userData,
+      };
     } catch (error) {
-      throw error;
+      console.error('Sign in error:', error);
+      throw new Error('Failed to sign in');
     }
   };
 
+  /**
+   * Simple sign up (no actual authentication - demo mode)
+   */
+  const signUp = async (email, password, attributes = {}) => {
+    try {
+      // Simple demo signup - just store the user data
+      const userData = {
+        email: email,
+        name: attributes.name || email.split('@')[0],
+        ...attributes,
+        id: Date.now().toString(),
+      };
+
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+
+      return {
+        user: userData,
+        userConfirmed: true,
+        userSub: userData.id,
+      };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      throw new Error('Failed to sign up');
+    }
+  };
+
+  /**
+   * Sign out
+   */
   const signOut = async () => {
     try {
-      await CognitoService.signOut();
+      await AsyncStorage.removeItem('user');
       setUser(null);
-      setUserAttributes(null);
-      setTokens(null);
       setIsAuthenticated(false);
-
-      // Clear AsyncStorage
-      await AsyncStorage.removeItem('userTokens');
-      await AsyncStorage.removeItem('userAttributes');
+      return true;
     } catch (error) {
-      throw error;
+      console.error('Sign out error:', error);
+      throw new Error('Failed to sign out');
     }
   };
 
-  const forgotPassword = async (email) => {
-    try {
-      const result = await CognitoService.forgotPassword(email);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const confirmPassword = async (email, code, newPassword) => {
-    try {
-      const result = await CognitoService.confirmPassword(email, code, newPassword);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const changePassword = async (oldPassword, newPassword) => {
-    try {
-      const result = await CognitoService.changePassword(oldPassword, newPassword);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const updateUserAttributes = async (attributes) => {
-    try {
-      const result = await CognitoService.updateUserAttributes(attributes);
-      // Refresh user attributes
-      await checkAuthState();
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
+  /**
+   * Get user attribute
+   */
   const getUserAttribute = (attributeName) => {
-    return userAttributes ? userAttributes[attributeName] : null;
+    return user ? user[attributeName] : null;
+  };
+
+  /**
+   * Confirm sign up (no-op in demo mode)
+   */
+  const confirmSignUp = async (email, code) => {
+    // No-op in demo mode
+    return { success: true };
+  };
+
+  /**
+   * Resend confirmation code (no-op in demo mode)
+   */
+  const resendConfirmationCode = async (email) => {
+    // No-op in demo mode
+    return { success: true };
   };
 
   const value = {
     user,
-    userAttributes,
-    tokens,
     loading,
     isAuthenticated,
+    signIn,
     signUp,
+    signOut,
     confirmSignUp,
     resendConfirmationCode,
-    signIn,
-    signOut,
-    forgotPassword,
-    confirmPassword,
-    changePassword,
-    updateUserAttributes,
     getUserAttribute,
-    checkAuthState,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
