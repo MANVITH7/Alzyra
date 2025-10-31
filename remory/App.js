@@ -14,18 +14,18 @@ import EmailVerificationPage from './components/EmailVerificationPage.js';
 
 // Import AuthProvider and LiveKitProvider
 import { AuthProvider } from './contexts/AuthContext.js';
-// import { LiveKitProvider } from './contexts/LiveKitContext.js'; // DISABLED - Only using Vapi
+import { LiveKitProvider } from './contexts/LiveKitContext.js';
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <AuthProvider>
-      {/* <LiveKitProvider> DISABLED - Only using Vapi */}
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="auto" />
-          <Stack.Navigator
+      <LiveKitProvider>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <Stack.Navigator
             initialRouteName="Login"
             screenOptions={{
               headerStyle: {
@@ -71,7 +71,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
-      {/* </LiveKitProvider> DISABLED - Only using Vapi */}
+      </LiveKitProvider>
     </AuthProvider>
   );
 }

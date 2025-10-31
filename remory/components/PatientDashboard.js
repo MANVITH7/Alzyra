@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // import { useLiveKit } from '../contexts/LiveKitContext'; // DISABLED - Only using Vapi
 // import * as LiveKitService from '../services/livekitService'; // DISABLED - Only using Vapi
 import VoiceAssistantService from '../services/voiceAssistantService';
+import ClaudeConversationModal from './ClaudeConversationModal';
 
 const { width } = Dimensions.get('window');
 
@@ -23,23 +24,10 @@ export default function PatientDashboard({ navigation, route }) {
   const [userName] = useState(route?.params?.patientName || 'Patient');
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
-  
-  // LiveKit hooks - DISABLED - Only using Vapi
-  const isConnected = false; // Always false - LiveKit disabled
-  const agentMessages = [];
-  const connectionState = 'disconnected';
-  const agentState = 'initializing';
-  const agentParticipant = null;
-  const connectToAgent = () => {};
-  const disconnect = () => {};
-  const toggleMicrophone = () => {};
-  const isAudioEnabled = false;
 
-  // Vapi voice assistant state
-  const [isVapiConnected, setIsVapiConnected] = useState(false);
-  const [vapiCallId, setVapiCallId] = useState(null);
-  const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false);
-  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  // Claude conversation state
+  const [claudeModalVisible, setClaudeModalVisible] = useState(false);
+  const [currentMemoryContext, setCurrentMemoryContext] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -106,168 +94,32 @@ export default function PatientDashboard({ navigation, route }) {
   ];
 
   const handleMemoryRecall = (memory) => {
+    // Open Claude conversation modal for this memory
+    console.log('Starting Claude conversation for:', memory.title);
+    setCurrentMemoryContext(memory);
+    setClaudeModalVisible(true);
+  };
+
+  const handleReconstructMemory = () => {
     Alert.alert(
-      'Memory Recall',
-      `Let's help you remember: ${memory.title}`,
+      'AI Memory Reconstruction',
+      'I\'ll help you reconstruct a memory. What would you like to remember?',
       [
         {
-          text: 'Start AI Reconstruction',
-          onPress: () => {
-            // Navigate to AI reconstruction screen
-            console.log('Starting AI reconstruction for:', memory.title);
-            // In a real app, this would navigate to the AI reconstruction screen
-          }
+          text: 'Yesterday Afternoon',
+          onPress: () => console.log('Reconstructing yesterday afternoon')
+        },
+        {
+          text: 'Last Week',
+          onPress: () => console.log('Reconstructing last week')
+        },
+        {
+          text: 'Choose Specific Memory',
+          onPress: () => console.log('Choosing specific memory')
         },
         { text: 'Cancel', style: 'cancel' }
       ]
     );
-  };
-
-  // Vapi voice assistant handler
-  const handleVapiVoiceAssistant = async () => {
-    if (!isVapiConnected) {
-      // Start Vapi call
-      try {
-        Alert.alert(
-          'Starting AI Voice Assistant...',
-          'Connecting to your AI assistant powered by Vapi.ai',
-          [],
-          { cancelable: false }
-        );
-
-        // Set up event handlers
-        VoiceAssistantService.onCallStart = () => {
-          setIsVapiConnected(true);
-          setIsAssistantSpeaking(false);
-          setIsUserSpeaking(false);
-          Alert.alert(
-            'Connected! 🎉',
-            'Your AI assistant is now listening. Just speak naturally!',
-            [{ text: 'OK' }]
-          );
-        };
-
-        VoiceAssistantService.onCallEnd = () => {
-          setIsVapiConnected(false);
-          setVapiCallId(null);
-          setIsAssistantSpeaking(false);
-          setIsUserSpeaking(false);
-        };
-
-        VoiceAssistantService.onUserStartSpeaking = () => {
-          setIsUserSpeaking(true);
-        };
-
-        VoiceAssistantService.onUserStopSpeaking = () => {
-          setIsUserSpeaking(false);
-        };
-
-        VoiceAssistantService.onAssistantStartSpeaking = () => {
-          setIsAssistantSpeaking(true);
-        };
-
-        VoiceAssistantService.onAssistantStopSpeaking = () => {
-          setIsAssistantSpeaking(false);
-        };
-
-        VoiceAssistantService.onError = (error) => {
-          Alert.alert('Error', 'Voice assistant error: ' + error.message);
-        };
-
-        // Start the call
-        const result = await VoiceAssistantService.startVoiceConversation();
-        setVapiCallId(result.callId);
-        
-      } catch (error) {
-        Alert.alert('Error', 'Failed to start voice assistant: ' + error.message);
-      }
-    } else {
-      // End call
-      try {
-        await VoiceAssistantService.stopVoiceConversation();
-        setIsVapiConnected(false);
-        setVapiCallId(null);
-        Alert.alert('Disconnected', 'Voice assistant disconnected');
-      } catch (error) {
-        Alert.alert('Error', 'Failed to disconnect: ' + error.message);
-      }
-    }
-  };
-
-  const handleReconstructMemory = async () => {
-    // LIVKIT DISABLED - Only using Vapi
-    Alert.alert('LiveKit Disabled', 'LiveKit is currently disabled. Please use the Vapi Voice Assistant button instead.');
-    return;
-    
-    /* DISABLED CODE
-    // If already connected, show disconnect option
-    if (isConnected) {
-      Alert.alert(
-        'Disconnect from AI Agent?',
-        'You are currently connected to the AI agent. Would you like to disconnect?',
-        [
-          {
-            text: 'Disconnect',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await disconnect();
-                Alert.alert('Disconnected', 'You have been disconnected from the AI agent.');
-              } catch (error) {
-                Alert.alert('Error', 'Failed to disconnect: ' + error.message);
-              }
-            }
-          },
-          { text: 'Stay Connected', style: 'cancel' }
-        ]
-      );
-      return;
-    }
-
-    // If not connected, connect to the agent
-    try {
-      Alert.alert(
-        'Connecting to AI Agent...',
-        'Please wait while we connect you to your memory assistant.',
-        [],
-        { cancelable: false }
-      );
-
-      // Generate a unique room name for this patient session
-      const roomName = `patient-${userName}-${Date.now()}`;
-      
-      // Generate token
-      const token = await LiveKitService.generateToken(roomName, userName);
-      console.log('Generated LiveKit token for room:', roomName);
-      
-      // Connect to agent
-      await connectToAgent(token);
-      
-      // Wait a moment for connection to establish
-      setTimeout(async () => {
-        // Enable microphone automatically for voice interaction
-        await toggleMicrophone();
-        
-        Alert.alert(
-          'Connected! 🎉',
-          'You are now connected to your AI memory assistant. You can speak to it naturally, and it will help you reconstruct your memories.',
-          [
-            {
-              text: 'Start Talking',
-              onPress: () => console.log('Ready to talk to agent'),
-              style: 'default'
-            }
-          ]
-        );
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Error connecting to agent:', error);
-      Alert.alert(
-        'Connection Error',
-        'We couldn\'t connect to the AI agent. Please make sure the agent is running and try again.\n\nError: ' + error.message
-      );
-    } */
   };
 
   const handleConfusion = () => {
@@ -276,12 +128,21 @@ export default function PatientDashboard({ navigation, route }) {
       'It\'s okay to feel confused. Let me help you remember where you are and what you\'re doing.',
       [
         {
-          text: 'Help Me Remember',
-          onPress: () => console.log('Providing comfort and guidance')
+          text: 'Talk to AI Assistant',
+          onPress: () => {
+            console.log('Starting Claude conversation for confusion support');
+            const confusionContext = {
+              title: 'Feeling confused',
+              type: 'emergency',
+              time: new Date().toLocaleString()
+            };
+            setCurrentMemoryContext(confusionContext);
+            setClaudeModalVisible(true);
+          }
         },
         {
           text: 'Call My Caregiver',
-          onPress: () => console.log('Calling caregiver')
+          onPress: () => handleCallCaregiver()
         },
         { text: 'I\'m Okay', style: 'cancel' }
       ]
@@ -440,78 +301,14 @@ export default function PatientDashboard({ navigation, route }) {
           ]}
         >
           <TouchableOpacity
-            style={[
-              styles.reconstructButton,
-              isConnected && styles.reconstructButtonConnected
-            ]}
+            style={styles.reconstructButton}
             onPress={handleReconstructMemory}
           >
-            <Text style={styles.reconstructButtonText}>
-              {isConnected ? '✓ Connected to AI Agent' : 'Reconstruct a Memory'}
-            </Text>
+            <Text style={styles.reconstructButtonText}>Reconstruct a Memory</Text>
           </TouchableOpacity>
-          
-          {/* Vapi Voice Assistant Button */}
-          <TouchableOpacity
-            style={[
-              styles.reconstructButton,
-              styles.altVoiceButton,
-              isVapiConnected && styles.reconstructButtonConnected
-            ]}
-            onPress={handleVapiVoiceAssistant}
-          >
-            <Text style={styles.reconstructButtonText}>
-              {isVapiConnected 
-                ? '⏸️ Disconnect AI Assistant' 
-                : '🤖 AI Voice Assistant (Vapi)'}
-            </Text>
-          </TouchableOpacity>
-          
           <Text style={styles.reconstructPrompt}>
-            {isConnected 
-              ? `🎤 Your microphone is active. Agent is ${agentState}. Speak naturally to your AI assistant for help with memories.`
-              : isVapiConnected
-              ? isUserSpeaking
-                ? '🎤 You are speaking...'
-                : isAssistantSpeaking
-                ? '🎤 AI Assistant is speaking...'
-                : '🎤 Connected to AI Assistant! Speak naturally and I will help you remember.'
-              : 'Would you like me to help you remember what you did yesterday afternoon?'
-            }
+            Would you like me to help you remember what you did yesterday afternoon?
           </Text>
-          
-          {/* Agent Status Display */}
-          {isConnected && (
-            <View style={styles.agentStatusContainer}>
-              <View style={styles.agentStatusRow}>
-                <View style={[
-                  styles.agentStatusDot,
-                  { backgroundColor: agentParticipant ? '#2ECC71' : '#95A5A6' }
-                ]} />
-                <Text style={styles.agentStatusText}>
-                  {agentParticipant ? 'AI Assistant Active' : 'Waiting for AI Assistant...'}
-                </Text>
-              </View>
-              {agentParticipant && (
-                <Text style={styles.agentStateText}>
-                  Status: {agentState}
-                </Text>
-              )}
-            </View>
-          )}
-          
-          {/* Agent Messages */}
-          {isConnected && agentMessages.length > 0 && (
-            <View style={styles.agentMessagesContainer}>
-              <Text style={styles.agentMessagesTitle}>Conversation:</Text>
-              {agentMessages.slice(-3).map((msg, index) => (
-                <View key={index} style={styles.agentMessage}>
-                  <Text style={styles.agentMessageFrom}>{msg.from}:</Text>
-                  <Text style={styles.agentMessageText}>{msg.message}</Text>
-                </View>
-              ))}
-            </View>
-          )}
         </Animated.View>
 
         {/* Emergency Actions */}
@@ -545,6 +342,14 @@ export default function PatientDashboard({ navigation, route }) {
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Claude Conversation Modal */}
+      <ClaudeConversationModal
+        visible={claudeModalVisible}
+        onClose={() => setClaudeModalVisible(false)}
+        memoryContext={currentMemoryContext}
+        userName={userName}
+      />
     </SafeAreaView>
   );
 }
@@ -696,50 +501,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  reconstructButtonConnected: {
-    backgroundColor: '#2ECC71', // Green color when connected
-  },
-  altVoiceButton: {
-    backgroundColor: '#3498DB', // Blue color for alternative voice assistant
-    marginTop: 12,
-  },
   reconstructPrompt: {
     fontSize: 16,
     color: '#5A7D9A',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
-    marginTop: 8,
-  },
-  agentMessagesContainer: {
-    backgroundColor: '#E8F8F5',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    maxHeight: 200,
-  },
-  agentMessagesTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 12,
-  },
-  agentMessage: {
-    marginBottom: 8,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#D5DBDB',
-  },
-  agentMessageFrom: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5A7D9A',
-    marginBottom: 4,
-  },
-  agentMessageText: {
-    fontSize: 14,
-    color: '#2C3E50',
-    lineHeight: 20,
   },
   emergencySection: {
     marginBottom: 20,
@@ -774,37 +541,5 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: '#E8F4FD',
     marginHorizontal: 16,
-  },
-  agentStatusContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  agentStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  agentStatusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  agentStatusText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2C3E50',
-  },
-  agentStateText: {
-    fontSize: 14,
-    color: '#5A7D9A',
-    marginTop: 4,
   },
 });

@@ -15,67 +15,23 @@ let currentRoom = null;
 /**
  * Generate a LiveKit access token for a participant
  * Note: In production, this should be done on your backend server for security
- * This is a development-only implementation using WebCrypto API
+ * This is a simplified version for development
  */
 export const generateToken = async (roomName, participantName) => {
   try {
-    const identity = participantName || 'user';
-    
-    // For development, we'll use a simplified approach
-    // In production, this MUST be done on a backend server
-    const header = {
-      alg: 'HS256',
-      typ: 'JWT'
-    };
+    // In a real app, you would call your backend API here to generate the token
+    // For now, we'll need to implement this on the backend
+    // Example:
+    // const response = await fetch('YOUR_BACKEND_URL/api/livekit/token', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ roomName, participantName })
+    // });
+    // const { token } = await response.json();
+    // return token;
 
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: LIVEKIT_API_KEY,
-      sub: identity,
-      iat: now,
-      exp: now + 3600, // 1 hour expiry
-      video: {
-        room: roomName,
-        roomJoin: true,
-        canPublish: true,
-        canSubscribe: true,
-        canPublishData: true,
-      }
-    };
-
-    // Helper function to encode to base64url
-    const toBase64Url = (str) => {
-      // Use global Buffer which is available through shim.js
-      const base64 = Buffer.from(str, 'utf8').toString('base64');
-      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    };
-
-    // Encode header and payload
-    const encodedHeader = toBase64Url(JSON.stringify(header));
-    const encodedPayload = toBase64Url(JSON.stringify(payload));
-    
-    // Create signature using WebCrypto
-    const message = `${encodedHeader}.${encodedPayload}`;
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(LIVEKIT_API_SECRET);
-    const messageData = encoder.encode(message);
-
-    const key = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-
-    const signature = await crypto.subtle.sign('HMAC', key, messageData);
-    const signatureArray = Buffer.from(signature);
-    const signatureBase64 = signatureArray.toString('base64');
-    const encodedSignature = signatureBase64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
-    const token = `${message}.${encodedSignature}`;
-    console.log('Generated LiveKit token for:', participantName);
-    return token;
+    console.warn('Token generation should be implemented on backend for security');
+    throw new Error('Token generation not implemented - requires backend endpoint');
   } catch (error) {
     console.error('Error generating token:', error);
     throw error;
